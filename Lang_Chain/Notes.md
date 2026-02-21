@@ -14,7 +14,13 @@
 
 ---
 
-### **5. What ia langchain and langchain under the Hood**
+### **5. What is langchain? and the purpose og using langchain? and What is langchain under the Hood?**
+
+We use langchain to call multiple platform SDKs.
+We Use langchain SDK and it call different models SDKs.
+
+![What is the purpose of using langchain](image.png)
+
 
 ---
 
@@ -22,10 +28,6 @@
 
 ---
 
-### ** *
-
----
-
 ### ****
 
 ---
@@ -34,7 +36,11 @@
 
 ---
 
-### ** *
+### ****
+
+---
+
+### ****
 
 ---
 
