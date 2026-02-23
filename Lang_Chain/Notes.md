@@ -163,11 +163,11 @@ We Use langchain SDK and it call different models SDKs.
 ![Use of messages?](image-1.png)
 ---
 
-### ****
+### **7. What are prmpts and what is prompt Engineering? Why use prompts instead of messages?**
 
 ---
 
-### ****
+### **What is Structured outputs?, what is pydantic? and How is it useful in this context?**
 
 ---
 
