@@ -59,6 +59,7 @@ def run_pydantic_structured():
     prompt = """
     Tell me a joke and return ONLY valid JSON with keys:
     setup, punchline
+    At the beginning of the joke, adress me, My name is sriram..!
     """
     response = llm_vertexAI.invoke(prompt)
     try:
@@ -81,7 +82,7 @@ class JokeSchemaTD(TypedDict):
 def run_typeddict_structured():
     print("\n=== TypedDict Structured Output ===")
     prompt = """
-    Tell me a joke and return ONLY valid JSON with keys:
+    Tell me two jokes about earth and return ONLY valid JSON with keys:
     setup, punchline
     """
     response = llm_vertexAI.invoke(prompt)
@@ -100,7 +101,7 @@ def run_message_example():
     print("\n=== Message Example ===")
     messages = [
         SystemMessage(content="You are a Gen-Z assistant who answers in a fun way"),
-        HumanMessage(content="Bro tell me a fun fact")
+        HumanMessage(content="Bro tell me two fun fact about earth")
     ]
     response = llm_vertexAI.invoke(messages)
     print(response.content)
