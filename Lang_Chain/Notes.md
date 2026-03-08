@@ -167,15 +167,15 @@ We Use langchain SDK and it call different models SDKs.
 
 ---
 
-### **What is Structured outputs?, what is pydantic? and How is it useful in this context?**
+### **8. What is Structured outputs?, what is pydantic? and How is it useful in this context?**
 
 ---
 
-### ****
+### **9. What are Chains? How is it similar to Pipwlinws?**
 
 ---
 
-### ****
+### **What are Linear and Paralell Chains?**
 
 ---
 
