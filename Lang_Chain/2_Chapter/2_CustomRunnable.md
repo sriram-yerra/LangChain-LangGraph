@@ -1,3 +1,5 @@
+![alt text](image.png)
+
 # LangChain Chain Pipeline — Step-by-Step Explanation
 
 The chain below builds a multi-step LLM workflow that performs two tasks:

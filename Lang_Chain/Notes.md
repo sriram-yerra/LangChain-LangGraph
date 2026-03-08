@@ -175,7 +175,199 @@ We Use langchain SDK and it call different models SDKs.
 
 ---
 
-### **What are Linear and Paralell Chains?**
+### **10. What are Linear and Paralell Chains?**
+
+---
+
+### **11. What is Runnable and Runnable Lambda?**
+
+### What is a Runnable in LangChain
+
+A Runnable is any object that can receive input, process it, and produce output using a common interface.
+
+In LangChain, every runnable supports methods like:
+
+- `invoke()` → run once
+- `batch()` → run multiple inputs
+- `stream()` → stream outputs
+
+So a Runnable is basically a standard execution unit in LangChain pipelines.
+
+Think of it as:
+
+Input → Runnable → Output
+
+#### Examples of things that are Runnables in LangChain:
+
+- PromptTemplate
+- LLM models
+- Output parsers
+- Chains
+- Custom functions
+
+#### Example Runnable (LLM)
+
+```python
+response = llm.invoke("What is Earth?")
+```
+
+Here:
+
+`llm` is a Runnable.
+
+It receives input and returns output.
+
+#### Example Runnable (Prompt)
+
+```python
+prompt_template.invoke({"input": "Hello"})
+```
+
+Here:
+
+`prompt_template` is also a Runnable.
+
+### Why LangChain Uses the Runnable Concept
+
+LangChain treats everything as a Runnable so that components can be easily connected.
+
+#### Example pipeline:
+
+Prompt → LLM → Parser
+
+Each component is a runnable.
+
+That is why you can write:
+
+```plaintext
+prompt | llm | parser
+```
+
+This works because all three objects are Runnable objects.
+
+### What is RunnableLambda
+
+RunnableLambda is a way to convert a normal Python function into a Runnable.
+
+Normally, Python functions are not LangChain runnables.
+
+#### Example normal function:
+
+```python
+def dictionary_maker(text):
+    return {"text": text}
+```
+
+This function cannot be used directly inside a chain.
+
+So LangChain provides:
+
+`RunnableLambda`
+
+which wraps the function.
+
+#### Example
+
+```python
+dictionary_maker_runnable = RunnableLambda(dictionary_maker)
+```
+
+Now this function becomes a Runnable and can be used inside chains.
+
+### Example Pipeline With RunnableLambda
+
+```python
+chain = (
+    prompt_template
+    | llm
+    | parser
+    | dictionary_maker_runnable
+)
+```
+
+#### Pipeline flow:
+
+Input  
+↓  
+PromptTemplate  
+↓  
+LLM  
+↓  
+Parser  
+↓  
+Custom Python Function  
+
+The custom function now behaves like any other LangChain component.
+
+### Visual Explanation
+
+Normal Python function:
+
+`text → dictionary_maker() → dict`
+
+With RunnableLambda:
+
+`text → RunnableLambda(dictionary_maker) → dict`
+
+Now it fits inside LangChain pipelines.
+
+### Example Code
+
+```python
+from langchain_core.runnables import RunnableLambda
+
+def add_prefix(text: str):
+    return "Prefix: " + text
+
+prefix_runnable = RunnableLambda(add_prefix)
+
+result = prefix_runnable.invoke("Hello")
+
+print(result)
+```
+
+Output:
+
+```
+Prefix: Hello
+```
+
+### Difference Between Runnable and RunnableLambda
+
+| Concept          | Meaning                                           |
+|------------------|--------------------------------------------------|
+| Runnable         | Base interface for executable components          |
+| RunnableLambda   | Wrapper that converts a Python function into a Runnable |
+
+### Why RunnableLambda is Important
+
+It allows you to insert custom logic inside LLM pipelines.
+
+#### Example uses:
+
+- Data formatting
+- Validation
+- API calls
+- Retrieval
+- Pre/Post processing
+
+#### Example real pipeline:
+
+User Query  
+↓  
+Retriever  
+↓  
+LLM  
+↓  
+Custom Processing Function  
+↓  
+Final Response  
+
+**Key Idea**
+
+Runnable = executable component
+
+RunnableLambda = convert Python function → runnable component
 
 ---
 
@@ -187,11 +379,7 @@ We Use langchain SDK and it call different models SDKs.
 
 ---
 
-### ****
-
----
-
-### ** *
+### ** **
 
 ---
 
@@ -203,7 +391,7 @@ We Use langchain SDK and it call different models SDKs.
 
 ---
 
-### ** *
+### ** **
 
 ---
 
