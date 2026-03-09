@@ -1,16 +1,18 @@
 """
 Script Description:
-Demonstrates Conditional Chains in LangChain.
-The pipeline:
+Demonstrates Conditional Chains in LangChain using Vertex AI.
+
+Pipeline:
 1. Classifies a movie review as positive or negative.
 2. Based on the classification, routes the input to different chains.
 3. Generates either a LinkedIn post or Instagram caption.
 """
 
 import os                                                     # Import OS module for environment variable access
+import json                                                   # Import json for parsing model responses
 from dotenv import load_dotenv                                # Import dotenv to load .env variables
 
-from langchain_openai import ChatOpenAI                       # Import OpenAI chat model wrapper
+from langchain_google_vertexai import ChatVertexAI            # Import Vertex AI Gemini chat model wrapper
 from langchain_core.prompts import ChatPromptTemplate         # Import prompt template utility
 from langchain_core.output_parsers import StrOutputParser     # Import parser to convert AIMessage → string
 from langchain_core.runnables import RunnableLambda, RunnableBranch  # Import runnable utilities
@@ -23,7 +25,7 @@ from typing import Literal                                    # Import Literal t
 # ========================================
 load_dotenv()                                                 # Load environment variables from .env file
 
-required_vars = [                                             # List of required environment variables for Vertex AI
+required_vars = [                                             # Required Vertex AI configuration variables
     "GEMINI_MODEL",
     "TEMPERATURE",
     "GOOGLE_CLOUD_PROJECT",
@@ -31,103 +33,121 @@ required_vars = [                                             # List of required
     "MAX_OUTPUT_TOKENS"
 ]
 
-for var in required_vars:                                     # Iterate through each required variable
-    if not os.getenv(var):                                    # Check whether the variable exists
-        raise ValueError(f"{var} not found")                   # Raise error if variable is missing
+for var in required_vars:                                     # Validate required variables
+    if not os.getenv(var):                                    # Check if variable exists
+        raise ValueError(f"{var} not found")                   # Raise error if missing
 
-print("Vertex AI configuration loaded")                       # Confirm configuration loaded successfully
+print("Vertex AI configuration loaded")                       # Confirm configuration
 
 # ========================================
-# TASK 2 — Initialize LLM
+# TASK 2 — Initialize Vertex AI LLM
 # ========================================
-llm_vertexAI = ChatVertexAI(                                  # Initialize Gemini model through Vertex AI
-    model_name=os.getenv("GEMINI_MODEL"),                     # Load model name from environment variables
-    temperature=float(os.getenv("TEMPERATURE")),              # Control randomness of generated responses
-    project=os.getenv("GOOGLE_CLOUD_PROJECT"),                # Specify Google Cloud project ID
-    location=os.getenv("GOOGLE_CLOUD_REGION"),                # Specify Vertex AI region
-    max_output_tokens=int(os.getenv("MAX_OUTPUT_TOKENS")),    # Set maximum number of tokens for model output
-    convert_system_message_to_human=True                      # Convert system messages to human messages for Gemini compatibility
+llm_vertexAI = ChatVertexAI(                                  # Initialize Gemini model
+    model_name=os.getenv("GEMINI_MODEL"),                     # Model name
+    temperature=float(os.getenv("TEMPERATURE")),              # Control randomness
+    project=os.getenv("GOOGLE_CLOUD_PROJECT"),                # Google Cloud project ID
+    location=os.getenv("GOOGLE_CLOUD_REGION"),                # Vertex AI region
+    max_output_tokens=int(os.getenv("MAX_OUTPUT_TOKENS")),    # Token limit
+    convert_system_message_to_human=True                      # Convert system messages for Gemini compatibility
 )
+
+# ========================================
+# TASK 6 — Movie Review Classification Prompt
+# ========================================
+prompt_template = ChatPromptTemplate.from_messages([           # Prompt template for classification
+    ("system", "You are a movie review evaluator."),
+    ("human", """Please categorize the movie review as positive or negative.
+      Return ONLY JSON in this format: {"movie_summary_flag": "positive"}
+      Review: {input}"""
+    )
+])
+
+str_parser = StrOutputParser()                                # Convert AIMessage → string
 
 # ========================================
 # TASK 3 — Define Structured Output Schema
 # ========================================
 class llm_schema(BaseModel):
-    movie_summary_flag: Literal["positive", "negative"]                # Force LLM output to be either positive or negative
-
-llm_structured_output = llm_openai.with_structured_output(llm_schema)  # Wrap LLM to return Pydantic structured output
+    movie_summary_flag: Literal["positive", "negative"]       # Allowed classification values
 
 # ========================================
-# TASK 4 — Movie Review Classification Prompt
+# TASK 4 — Parse JSON → Pydantic Schema
 # ========================================
-prompt_template = ChatPromptTemplate.from_messages([          # Create prompt template for review classification
-    ("system", "You are a movie review evaluator"),           # Define system role
-    ("human", "Please categorize the movie review as positive or negative : {input}")  # Insert user review
-])
+def parse_llm_output(text: str) -> llm_schema:
+    """
+    Function Description:
+    Parses JSON output from the LLM and converts it into
+    the defined Pydantic schema.
+    """
+    data = json.loads(text)                                    # Convert JSON string → dictionary
+    return llm_schema(**data)                                  # Convert dictionary → Pydantic model
+
+json_parser = RunnableLambda(parse_llm_output)                 # Convert parsing function into Runnable
 
 # ========================================
-# TASK 5 — Convert Pydantic Output → String
+# TASK 5 — Extract Label From Pydantic
 # ========================================
 def pydantic_json(input: llm_schema) -> str:
     """
     Function Description:
-    Extracts the 'movie_summary_flag' value from the Pydantic object.
+    Extracts the movie_summary_flag value from the Pydantic object.
     """
-    return input.model_dump()['movie_summary_flag']           # Convert Pydantic object to dict and return flag value
+    return input.model_dump()["movie_summary_flag"]            # Convert Pydantic model → dictionary
 
-pydantic_json_lambda = RunnableLambda(pydantic_json)          # Convert Python function into Runnable
+pydantic_json_lambda = RunnableLambda(pydantic_json)           # Convert function into Runnable
+
 
 # ========================================
-# TASK 6 — LinkedIn Post Chain
+# TASK 5 — LinkedIn Chain
 # ========================================
-linkedin_prompt = ChatPromptTemplate.from_messages([                        # Prompt template for LinkedIn post generation
-    ("system", "You are a LinkedIn post generator"),                        # Define assistant role
-    ("human", "Create a post for the following text for LinkedIn: {text}")  # Insert content
+linkedin_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a LinkedIn post generator"),
+    ("human", "Create a LinkedIn post about this movie review: {text}")
 ])
 
-str_parser = StrOutputParser()                                # Convert AIMessage output to string
-
-chain_linkedin = linkedin_prompt | llm_openai | str_parser    # Create LinkedIn chain: Prompt → LLM → Parser
+linkedin_chain = linkedin_prompt | llm_vertexAI | str_parser
 
 # ========================================
-# TASK 7 — Instagram Chain
+# TASK 6 — Instagram Chain
 # ========================================
-def insta_chain(data: dict):
+instagram_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are an Instagram caption generator"),
+    ("human", "Create an Instagram caption about this movie review: {text}")
+])
+
+instagram_chain = instagram_prompt | llm_vertexAI | str_parser
+
+# ========================================
+# TASK 9 — Conditional Branching
+# ========================================
+def is_positive(text: str) -> bool:
     """
     Function Description:
-    Generates an Instagram caption from the input text.
+    Checks whether the sentiment classification returned
+    by the previous step is positive.
     """
-    text = data["text"]                                       # Extract text value from dictionary input
-    insta_prompt = ChatPromptTemplate.from_messages([          # Create prompt template for Instagram caption
-        ("system", "You are a LinkedIn post generator"),      # Define assistant role
-        ("human", "Create a post for the following text for Instagram: {text}")  # Insert text
-    ])
-    chain_insta = insta_prompt | llm_openai | str_parser       # Create Instagram generation chain
-    result = chain_insta.invoke(text)                          # Execute Instagram chain
-    return result                                              # Return generated caption
+    return "positive" in text
 
-insta_chain_runnable = RunnableLambda(insta_chain)             # Convert Instagram function into Runnable
-
-# ========================================
-# TASK 8 — Conditional Branching
-# ========================================
-conditional_chain = RunnableBranch(                            # Create conditional router
-    (lambda x: "positive" in x, chain_linkedin),               # If review is positive → run LinkedIn chain
-    insta_chain_runnable                                       # Otherwise → run Instagram chain
+conditional_chain = RunnableBranch(                       # Conditional router
+    (is_positive, linkedin_chain),                        # If positive → LinkedIn
+    instagram_chain                                       # Otherwise → Instagram
 )
 
 # ========================================
-# TASK 9 — Final Orchestrator Pipeline
+# TASK 10 — Final Orchestrator Pipeline
 # ========================================
-final_orchestrator = (                                         # Build full pipeline
-    prompt_template                                            # Step 1: Evaluate movie review
-    | llm_structured_output                                    # Step 2: Generate structured classification
-    | pydantic_json_lambda                                     # Step 3: Extract classification label
-    | conditional_chain                                        # Step 4: Route to correct content generator
+final_orchestrator = (
+    prompt_template                              # Step 1: Evaluate movie review
+    | llm_vertexAI                               # Step 2: Generate JSON classification
+    | str_parser                                 # Step 3: Extract text
+    | json_parser                                # Step 4: Convert JSON → Pydantic schema
+    | pydantic_json_lambda                       # Step 5: Extract label
+    | conditional_chain                          # Step 6: Route to correct chain
 )
 
 # ========================================
-# TASK 10 — Execute Pipeline
+# TASK 11 — Execute Pipeline
 # ========================================
 result = final_orchestrator.invoke({"input": "I loved this KGF movie"})  # Run pipeline
-print(result)                                                            # Print generated output
+
+print(result)                                                             # Print generated output
