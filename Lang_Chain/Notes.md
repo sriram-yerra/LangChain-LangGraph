@@ -371,7 +371,7 @@ RunnableLambda = convert Python function → runnable component
 
 ---
 
-### ****
+### **What is Chain as a Runnable? and What is Beautification?**
 
 ---
 

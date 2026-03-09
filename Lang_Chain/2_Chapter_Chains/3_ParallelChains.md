@@ -2,6 +2,10 @@ This file introduces a new LangChain concept:
 
 ## Parallel Chains
 
+![alt text](image-1.png)
+
+![alt text](image-2.png)
+
 Earlier you learned a linear chain:
 
 ```
@@ -182,6 +186,10 @@ and runs it.
 The result is returned.
 
 ### Step 8 — RunnableParallel
+
+![alt text](image-3.png)
+
+![alt text](image-4.png)
 
 This is the core concept of this file.
 

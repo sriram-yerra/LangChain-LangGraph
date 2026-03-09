@@ -14,11 +14,9 @@ from langchain_core.prompts import ChatPromptTemplate         # Import ChatPromp
 from langchain_core.output_parsers import StrOutputParser     # Import parser to convert AIMessage to plain text
 from langchain_core.runnables import RunnableLambda           # Import RunnableLambda to wrap Python functions as runnables
 
-
 # ==============================
 # Load environment variables
 # ==============================
-
 load_dotenv()                                                 # Load environment variables from the .env file
 
 required_vars = [                                             # Define required environment variables for Vertex AI
@@ -35,21 +33,17 @@ for var in required_vars:                                     # Iterate through 
 
 print("Vertex AI configuration loaded")                       # Confirm Vertex AI configuration is loaded
 
-
 # ==============================
 # TASK 1 — First Prompt
 # ==============================
-
 prompt_template = ChatPromptTemplate.from_messages([           # Create the first prompt template
     ("system", "You are a helpful assistant"),                 # System instruction defining assistant behavior
     ("human", "{input}")                                       # Placeholder where user input will be inserted
 ])
 
-
 # ==============================
 # TASK 2 — LLM
 # ==============================
-
 llm_vertexAI = ChatVertexAI(                                   # Initialize Gemini model through Vertex AI
     model_name=os.getenv("GEMINI_MODEL"),                      # Load Gemini model name from environment variables
     temperature=float(os.getenv("TEMPERATURE")),               # Control randomness of the model response
@@ -59,11 +53,9 @@ llm_vertexAI = ChatVertexAI(                                   # Initialize Gemi
     convert_system_message_to_human=True                       # Convert system messages for Gemini compatibility
 )
 
-
 # ==============================
 # TASK 3 — Output Parser
 # ==============================
-
 str_parser = StrOutputParser()                                 # Convert AIMessage object returned by LLM to plain text
 
 '''
@@ -71,7 +63,6 @@ Example:
 LLM Output → AIMessage(content="Paris")
 Parser Output → "Paris"
 '''
-
 
 # ==============================
 # TASK 4 — Custom Runnable
@@ -81,8 +72,7 @@ from langchain_core.runnables import RunnableLambda           # Import RunnableL
 def dictionary_maker(text: str) -> dict:
     """
     Function Description:
-    Converts the LLM text output into a dictionary so it can be
-    passed to the next prompt template which expects a {text} variable.
+    Converts the LLM text output into a dictionary so it can be passed to the next prompt template which expects a {text} variable.
     """
     return {"text": text}                                      # Return dictionary with key 'text'
 
@@ -92,17 +82,14 @@ dictionary_maker_runnable = RunnableLambda(dictionary_maker)  # Wrap Python func
 # ==============================
 # TASK 5 — Second Prompt
 # ==============================
-
 prompt_post = ChatPromptTemplate.from_messages([               # Create second prompt template for LinkedIn post generation
     ("system", "You're a social media post generator."),       # System instruction describing assistant role
     ("human", "Create a post for the following text for LinkedIn: {text}")  # Use text generated from previous step
 ])
 
-
 # ==============================
 # CHAIN PIPELINE
 # ==============================
-
 chain = (                                                      # Create a LangChain LCEL pipeline
     prompt_template                                            # Step 1: Generate prompt from user input
     | llm_vertexAI                                             # Step 2: Send prompt to Vertex AI LLM
@@ -112,7 +99,6 @@ chain = (                                                      # Create a LangCh
     | llm_vertexAI                                             # Step 6: Send LinkedIn prompt to LLM again
     | str_parser                                               # Step 7: Extract final LinkedIn post text
 )
-
 
 result = chain.invoke({                                        # Execute the entire chain pipeline
     "input": "What is the capital of France?"                  # Provide input variable for first prompt
